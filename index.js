@@ -23,6 +23,7 @@ let phonebook = [
     name: "Mary Poppendieck",
     number: "39-23-6423122",
   },
+  { id: 48, name: "Lula Swiftie", number: "11-48484848" },
 ];
 
 const cors = require("cors");
