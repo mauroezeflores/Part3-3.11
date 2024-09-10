@@ -29,6 +29,7 @@ let phonebook = [
 const cors = require("cors");
 
 app.use(cors());
+app.use(express.static("dist"));
 
 const responseTime = require("response-time");
 const morgan = require("morgan");
