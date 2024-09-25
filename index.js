@@ -2,7 +2,7 @@ const repl = require("node:repl");
 const express = require("express");
 const app = express();
 require("dotenv").config(); //Para utilizar las variables de entorno definidas en .env
-const Note = require("./models/person");
+const Person = require("./models/person");
 
 let phonebook = [];
 
