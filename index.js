@@ -1,30 +1,10 @@
 const repl = require("node:repl");
 const express = require("express");
 const app = express();
+require("dotenv").config(); //Para utilizar las variables de entorno definidas en .env
+const Note = require("./models/person");
 
-let phonebook = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-  { id: 48, name: "Lula Swiftie", number: "11-48484848" },
-];
+let phonebook = [];
 
 const cors = require("cors");
 
@@ -51,7 +31,10 @@ app.get("/", (request, response) => {
 });
 
 app.get("/api/persons", (request, response) => {
-  response.json(phonebook);
+  Person.find({}).then((persons) => {
+    //find parameter void {}, trae todos los objetos de la coleccion persons
+    response.json(persons);
+  });
 });
 
 app.get("/api/persons/:id", (request, response) => {
