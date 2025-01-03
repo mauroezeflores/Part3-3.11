@@ -9,7 +9,8 @@ const password = process.argv[2];
 
 //const url = `mongodb+srv://fullstack:${password}@cluster0.o1opl.mongodb.net/?retryWrites=true&w=majority`;
 //luego del mongodb.net/agregamos nombre del schema para la db
-const url = `mongodb+srv://mauroezequielflores48:${password}@cluster48.xanob.mongodb.net/phoneBookApp?retryWrites=true&w=majority&appName=Cluster48`;
+//const url = `mongodb+srv://mauroezequielflores48:${password}@cluster48.xanob.mongodb.net/phoneBookApp?retryWrites=true&w=majority&appName=Cluster48`;
+const url = `mongodb+srv://mauroezequielflores48:${password}@cluster48.xanob.mongodb.net/?retryWrites=true&w=majority&appName=Cluster48`;
 
 mongoose.set("strictQuery", false);
 

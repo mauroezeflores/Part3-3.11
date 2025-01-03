@@ -18,6 +18,10 @@ morgan.token("content", function (request, response) {
   return JSON.stringify(request.body);
 });
 
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "unknown endpoint" });
+};
+
 app.use(express.json());
 app.use(responseTime());
 app.use(
@@ -38,7 +42,10 @@ app.get("/api/persons", (request, response) => {
 });
 
 app.get("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id); //Ya que params.id devuelve el string
+  Person.findById(request.params.id).then((person) => {
+    response.json(person);
+  });
+  /*const id = Number(request.params.id); //Ya que params.id devuelve el string
   //console.log(id);
   const person = phonebook.find((person) => person.id === id);
 
@@ -47,39 +54,45 @@ app.get("/api/persons/:id", (request, response) => {
   } else {
     //si person === falsy - undefined
     response.status(404).end();
-  }
+  }*/
 });
 
-const phonebookSize = () => {
-  return phonebook.length;
-};
-
-app.get("/info", (request, response) => {
-  const currentTime = new Date();
+app.get("/info", (request, response, next) => {
+  //const currentTime = new Date();
+  Person.find({})
+    .then((persons) => {
+      response.send(
+        `<p>Phonebook has info for ${
+          persons.length
+        } people</p><p>${new Date()}</p>`
+      );
+    })
+    .catch((error) => next(error));
+  /*
   const totalPersons = phonebookSize();
-
+  console.log(totalPersons);
   response.send(
     `<p>Phonebook has info for ${totalPersons} people</p><p>${currentTime}</p>`
-  );
+  );*/
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id); //Ya que params.id devuelve el string
-
-  phonebook = phonebook.filter((person) => person.id !== id);
-
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
-
+/*
 const generateID = () => {
   //Random ID exercise 3.5
   min = Math.ceil(10);
   max = Math.floor(99999999);
   return Math.floor(Math.random() * (max - min) + min);
 };
-
+*/
 const personAlreadyExist = (reqName) => {
-  return phonebook.find((p) => p.name === reqName);
+  return Person.findById(reqName);
 };
 
 app.post("/api/persons", (request, response) => {
@@ -103,7 +116,16 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  const person = {
+  const person = new Person({
+    name: body.name,
+    number: body.number,
+  });
+
+  person.save().then((savedPerson) => {
+    response.json(savedPerson);
+  });
+
+  /*const person = {
     id: generateID(),
     name: body.name,
     number: body.number,
@@ -111,8 +133,39 @@ app.post("/api/persons", (request, response) => {
 
   phonebook = phonebook.concat(person);
 
-  response.json(person);
+  response.json(person);*/
 });
+
+app.put("/api/persons/:id", (request, response, next) => {
+  const body = request.body;
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  };
+
+  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then((updatedPerson) => {
+      response.json(updatedPerson);
+    })
+    .catch((error) => next(error));
+});
+
+app.use(unknownEndpoint);
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.mesage);
+
+  if (error.name === "CastError") {
+    //Si se rechaza la promesa
+    //400 Bad Request description matchs client error from an ID
+    //Comprobar si es un error causado por un ID de obj no valido para MongoDBs
+    return response.status(400).send({ error: "malformatted id" });
+  }
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
