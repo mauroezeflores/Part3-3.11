@@ -1,0 +1,8 @@
+POST http://localhost:3001/api/persons
+
+
+
+{
+    "name":"bbcd",
+    "number":"11-47413109"
+}

@@ -4,15 +4,29 @@ const app = express();
 require("dotenv").config(); //Para utilizar las variables de entorno definidas en .env
 const Person = require("./models/person");
 
-let phonebook = [];
-
 const cors = require("cors");
 
 app.use(cors());
 app.use(express.static("dist"));
 
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    //if the promise is rejected 
+    //400 Bad Request description matchs client error from an ID
+    //Checks if the error is caused by an invalid ID for mongoDB
+    return response.status(400).send({ error: "malformatted id" });
+  }else if (error.name === "ValidationError") {
+    //if mongoose validation fails 
+    return response.status(400).json({error: error.message});
+  }
+  next(error);
+}
 const responseTime = require("response-time");
 const morgan = require("morgan");
+const person = require("./models/person");
+const { error } = require("node:console");
 
 morgan.token("content", function (request, response) {
   return JSON.stringify(request.body);
@@ -30,90 +44,48 @@ app.use(
   )
 );
 
-app.get("/", (request, response) => {
-  response.send("<h1>Phonebook backend exercise</h1>");
-});
-
+//Get all persons from mongoDB
 app.get("/api/persons", (request, response) => {
   Person.find({}).then((persons) => {
-    //find parameter void {}, trae todos los objetos de la coleccion persons
+    //find parameter void {}, get all objets from persons collection
     response.json(persons);
   });
 });
 
-app.get("/api/persons/:id", (request, response) => {
-  Person.findById(request.params.id).then((person) => {
-    response.json(person);
-  });
-  /*const id = Number(request.params.id); //Ya que params.id devuelve el string
-  //console.log(id);
-  const person = phonebook.find((person) => person.id === id);
+//Get person by ID from mongoDB
+app.get("/api/persons/:id", (request, response, next) => {
 
-  if (person) {
-    response.json(person);
-  } else {
-    //si person === falsy - undefined
-    response.status(404).end();
-  }*/
+  const { id } = request.params;
+  
+  Person.findById(id)
+  . then((person) => {
+      if(person){
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+  })
+  .catch(error => next(error));
 });
 
+//Get info from mongoDB
 app.get("/info", (request, response, next) => {
-  //const currentTime = new Date();
-  Person.find({})
-    .then((persons) => {
-      response.send(
-        `<p>Phonebook has info for ${
-          persons.length
-        } people</p><p>${new Date()}</p>`
-      );
-    })
-    .catch((error) => next(error));
-  /*
-  const totalPersons = phonebookSize();
-  console.log(totalPersons);
-  response.send(
-    `<p>Phonebook has info for ${totalPersons} people</p><p>${currentTime}</p>`
-  );*/
-});
 
-app.delete("/api/persons/:id", (request, response, next) => {
-  Person.findByIdAndDelete(request.params.id)
-    .then((result) => {
-      response.status(204).end();
-    })
-    .catch((error) => next(error));
-});
-/*
-const generateID = () => {
-  //Random ID exercise 3.5
-  min = Math.ceil(10);
-  max = Math.floor(99999999);
-  return Math.floor(Math.random() * (max - min) + min);
-};
-*/
-const personAlreadyExist = (reqName) => {
-  return Person.findById(reqName);
-};
+  Person.find({}).then((persons) => {
+    response.send(
+      `<p>Phonebook has info for ${persons.length} people</p><p>${new Date()}</p>`
+    );
+  })
+  .catch(error => next(error));
+})
 
-app.post("/api/persons", (request, response) => {
+//Create new person in phoneBook mongoDB
+
+app.post("/api/persons", (request, response, next) => {
   const body = request.body;
 
-  if (!body.name) {
-    return response.status(400).json({
-      error: "person name missing",
-    });
-  }
-
-  if (!body.number) {
-    return response.status(400).json({
-      error: "person number missing",
-    });
-  }
-
-  if (personAlreadyExist(body.name)) {
-    return response.status(409).json({
-      error: "name must be unique",
-    });
+  if (body.name === undefined) {
+    return response.status(400).json({ error: "name missing" });
   }
 
   const person = new Person({
@@ -123,48 +95,39 @@ app.post("/api/persons", (request, response) => {
 
   person.save().then((savedPerson) => {
     response.json(savedPerson);
-  });
-
-  /*const person = {
-    id: generateID(),
-    name: body.name,
-    number: body.number,
-  };
-
-  phonebook = phonebook.concat(person);
-
-  response.json(person);*/
+  })
+    .catch(error => next(error));
 });
+
+//Delete person in phoneBook mongoDB
+
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+   .then((result) => {
+    response.status(204).end();
+    })
+  .catch(error => next(error));
+});
+
+// Update person in phoneBook mongoDB by ID Part 3.17
 
 app.put("/api/persons/:id", (request, response, next) => {
-  const body = request.body;
+    const body = request.body;
 
-  const person = {
-    name: body.name,
-    number: body.number,
-  };
+    const person = {
+      name: body.name,
+      number: body.number,
+    };
 
-  Person.findByIdAndUpdate(request.params.id, person, { new: true })
-    .then((updatedPerson) => {
-      response.json(updatedPerson);
-    })
-    .catch((error) => next(error));
+    Person.findByIdAndUpdate(request.params.id, person, { new: true, runValidators:true, context: 'query' })
+      .then(updatedPerson => {
+        response.json(updatedPerson);
+      })
+      .catch(error => next(error));
 });
 
+
 app.use(unknownEndpoint);
-
-const errorHandler = (error, request, response, next) => {
-  console.error(error.mesage);
-
-  if (error.name === "CastError") {
-    //Si se rechaza la promesa
-    //400 Bad Request description matchs client error from an ID
-    //Comprobar si es un error causado por un ID de obj no valido para MongoDBs
-    return response.status(400).send({ error: "malformatted id" });
-  }
-  next(error);
-};
-
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
