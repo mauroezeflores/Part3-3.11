@@ -6,8 +6,9 @@ const Person = require("./models/person");
 
 const cors = require("cors");
 
-app.use(cors());
 app.use(express.static("dist"));
+app.use(cors());
+
 
 const errorHandler = (error, request, response, next) => {
   console.error(error.message);
