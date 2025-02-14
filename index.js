@@ -1,52 +1,52 @@
-const repl = require("node:repl");
-const express = require("express");
+const repl = require('node:repl');
+const express = require('express');
 const app = express();
-require("dotenv").config(); //Para utilizar las variables de entorno definidas en .env
-const Person = require("./models/person");
+require('dotenv').config(); //Para utilizar las variables de entorno definidas en .env
+const Person = require('./models/person');
 
-const cors = require("cors");
+const cors = require('cors');
 
-app.use(express.static("dist"));
+app.use(express.static('dist'));
 app.use(cors());
 
 
 const errorHandler = (error, request, response, next) => {
   console.error(error.message);
 
-  if (error.name === "CastError") {
+  if (error.name === 'CastError') {
     //if the promise is rejected 
     //400 Bad Request description matchs client error from an ID
     //Checks if the error is caused by an invalid ID for mongoDB
-    return response.status(400).send({ error: "malformatted id" });
-  }else if (error.name === "ValidationError") {
+    return response.status(400).send({ error: 'malformatted id' });
+  }else if (error.name === 'ValidationError') {
     //if mongoose validation fails 
     return response.status(400).json({error: error.message});
   }
   next(error);
 }
-const responseTime = require("response-time");
-const morgan = require("morgan");
-const person = require("./models/person");
-const { error } = require("node:console");
+const responseTime = require('response-time');
+const morgan = require('morgan');
+const person = require('./models/person');
+const { error } = require('node:console');
 
-morgan.token("content", function (request, response) {
+morgan.token('content', function (request, response) {
   return JSON.stringify(request.body);
 });
 
 const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: "unknown endpoint" });
+  response.status(404).send({ error: 'unknown endpoint' });
 };
 
 app.use(express.json());
 app.use(responseTime());
 app.use(
   morgan(
-    ":method :url :status :res[content-length] - :response-time ms :content"
+    ':method :url :status :res[content-length] - :response-time ms :content'
   )
 );
 
 //Get all persons from mongoDB
-app.get("/api/persons", (request, response) => {
+app.get('/api/persons', (request, response) => {
   Person.find({}).then((persons) => {
     //find parameter void {}, get all objets from persons collection
     response.json(persons);
@@ -54,7 +54,7 @@ app.get("/api/persons", (request, response) => {
 });
 
 //Get person by ID from mongoDB
-app.get("/api/persons/:id", (request, response, next) => {
+app.get('/api/persons/:id', (request, response, next) => {
 
   const { id } = request.params;
   
@@ -70,7 +70,7 @@ app.get("/api/persons/:id", (request, response, next) => {
 });
 
 //Get info from mongoDB
-app.get("/info", (request, response, next) => {
+app.get('/info', (request, response, next) => {
 
   Person.find({}).then((persons) => {
     response.send(
@@ -82,11 +82,11 @@ app.get("/info", (request, response, next) => {
 
 //Create new person in phoneBook mongoDB
 
-app.post("/api/persons", (request, response, next) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body;
 
   if (body.name === undefined) {
-    return response.status(400).json({ error: "name missing" });
+    return response.status(400).json({ error: 'name missing' });
   }
 
   const person = new Person({
@@ -102,7 +102,7 @@ app.post("/api/persons", (request, response, next) => {
 
 //Delete person in phoneBook mongoDB
 
-app.delete("/api/persons/:id", (request, response, next) => {
+app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
    .then((result) => {
     response.status(204).end();
@@ -112,7 +112,7 @@ app.delete("/api/persons/:id", (request, response, next) => {
 
 // Update person in phoneBook mongoDB by ID Part 3.17
 
-app.put("/api/persons/:id", (request, response, next) => {
+app.put('/api/persons/:id', (request, response, next) => {
     const body = request.body;
 
     const person = {
